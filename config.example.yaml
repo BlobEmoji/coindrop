@@ -1,0 +1,17 @@
+
+token: "mytoken"
+
+drop_channels:
+  - 357651359379750917
+
+cooldown_time: 20  # seconds for cooldown
+
+drop_chance: 0.1  # chance for drop per message as float (0.1 is 10%, etc)
+
+db_credentials:
+  host: localhost
+  port: 5432
+  user: myuser
+  database: mydb
+  password: "mypassword"
+  timeout: 60

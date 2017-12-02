@@ -108,3 +108,4 @@ ENV/
 
 # Configuration
 config.json
+config.yaml

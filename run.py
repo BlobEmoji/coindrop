@@ -2,8 +2,10 @@
 import asyncio
 import uvloop
 
-import json
 import logging
+import sys
+
+import yaml
 
 from bot import DropBot
 
@@ -23,13 +25,14 @@ stream.setFormatter(formatter)
 logging.getLogger().addHandler(handler)
 logging.getLogger().addHandler(stream)
 
-# TODO: use YAML instead
-with open("config.json", 'rb') as fp:
-    config = json.load(fp)
+with open("config.yaml", 'rb') as fp:
+    config = yaml.load(fp)
 
 token = config.pop("token")
 
 
 bot = DropBot('.', config=config)
 
+bot.load_extension("jishaku")
+bot.load_extension("cogs.coindrop")
 bot.run(token)
