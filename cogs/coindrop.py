@@ -70,7 +70,8 @@ class CoinDrop:
                 last_picked = $2
                 """, user_id, when)
 
-    @commands.cooldown(1, 5, commands.BucketType.channel)
+    @commands.cooldown(1, 4, commands.BucketType.user)
+    @commands.cooldown(1, 1.5, commands.BucketType.channel)
     @commands.command("check")
     async def check_command(self, ctx: commands.Context):
         if not self.bot.db_available.is_set():
@@ -89,7 +90,8 @@ class CoinDrop:
                 coin_text = f"{coins} {singular_coin if coins==1 else plural_coin}"
                 await ctx.send(f"{ctx.author.mention} You have {coin_text}.")
 
-    @commands.cooldown(1, 5, commands.BucketType.channel)
+    @commands.cooldown(1, 4, commands.BucketType.user)
+    @commands.cooldown(1, 1.5, commands.BucketType.channel)
     @commands.command("place")
     async def place_command(self, ctx: commands.Context):
         if not self.bot.db_available.is_set():
@@ -144,7 +146,8 @@ class CoinDrop:
                 except Rollback:
                     pass
 
-    @commands.cooldown(1, 5, commands.BucketType.channel)
+    @commands.cooldown(1, 4, commands.BucketType.user)
+    @commands.cooldown(1, 1.5, commands.BucketType.channel)
     @commands.command("stats")
     async def stats_command(self, ctx: commands.Context):
         if not self.bot.db_available.is_set():
