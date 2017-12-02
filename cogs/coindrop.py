@@ -81,6 +81,7 @@ class CoinDrop:
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
     @commands.command("check")
     async def check_command(self, ctx: commands.Context):
+        """Check your coin balance"""
         if not self.bot.db_available.is_set():
             return
 
@@ -101,6 +102,7 @@ class CoinDrop:
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
     @commands.command("place")
     async def place_command(self, ctx: commands.Context):
+        """Place down a coin for others to pick up"""
         if self.no_places:
             return
 
@@ -160,6 +162,7 @@ class CoinDrop:
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
     @commands.command("stats")
     async def stats_command(self, ctx: commands.Context):
+        """Coin leaderboard"""
         if not self.bot.db_available.is_set():
             return
 
@@ -185,6 +188,7 @@ class CoinDrop:
     @commands.has_permissions(ban_members=True)
     @commands.command("reset_user")
     async def reset_user(self, ctx: commands.Context, user: discord.User):
+        """Reset users' coin accounts"""
         if not self.bot.db_available.is_set():
             await ctx.send("No connection to database.")
             return
@@ -220,6 +224,7 @@ class CoinDrop:
     @commands.check(utils.check_granted_server)
     @commands.command("drop_setting")
     async def drop_setting(self, ctx: commands.Context, setting: bool):
+        """Set whether coins will drop at random or not."""
         self.no_drops = not setting
         await ctx.send(f"{'Will' if setting else 'Will **NOT**'} do random drops.")
 
@@ -227,6 +232,7 @@ class CoinDrop:
     @commands.check(utils.check_granted_server)
     @commands.command("place_setting")
     async def place_setting(self, ctx: commands.Context, setting: bool):
+        """Set whether users can place coins or not."""
         self.no_places = not setting
         await ctx.send(f"{'Will' if setting else 'Will **NOT**'} allow users to place new coins.")
 
