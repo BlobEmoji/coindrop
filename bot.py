@@ -17,7 +17,7 @@ class DropBot(commands.Bot):
         super().__init__(*args, **kwargs)
 
     async def acquire_pool(self):
-        credentials = self.config.get("db_credentials")
+        credentials = self.config.pop("db_credentials")
 
         if credentials is None:
             logger.critical("Cannot connect to db, no credentials!")

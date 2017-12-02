@@ -9,19 +9,26 @@ class CoinDrop:
     def __init__(self, bot):
         self.bot = bot
         self.last_drop = time.monotonic()
+        self.wait_until = self.last_drop
 
     async def on_message(self, message):
         if message.channel.id not in self.bot.config.get("drop_channels", []):
             return
 
-        cooldown = min(max((time.monotonic() - self.last_drop) / self.bot.config.get("cooldown_time", 20), 0), 1)
+        cooldown = self.bot.config.get("cooldown_time", 20)
+        recovery = self.bot.config.get("recovery_time", 10)
+        drop_chance = self.bot.config.get("drop_chance", 0.1)
 
-        weight = cooldown ** 3
+        exponential_element = min(max((time.monotonic() - self.wait_until) / recovery, 0), 1)
 
-        probability = weight * self.bot.config.get("drop_chance", 0.1)
+        weight = exponential_element ** 3
+
+        probability = weight * drop_chance
 
         if random.random() < probability:
             drop_message = await message.channel.send("A coin dropped! Type `.pick` to pick it up!")
+            self.last_drop = time.monotonic()
+            self.wait_until = self.last_drop + cooldown
 
             try:
                 def pick_check(m):
