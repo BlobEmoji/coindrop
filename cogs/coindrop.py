@@ -7,6 +7,8 @@ import time
 import discord
 from discord.ext import commands
 
+from . import utils
+
 
 class Rollback(Exception):
     pass
@@ -18,8 +20,13 @@ class CoinDrop:
         self.last_drop = time.monotonic()
         self.wait_until = self.last_drop
         self.drop_lock = asyncio.Lock()
+        self.no_drops = False
+        self.no_places = False
 
     async def on_message(self, message):
+        if self.no_drops:
+            return
+
         if message.channel.id not in self.bot.config.get("drop_channels", []):
             return
 
@@ -94,6 +101,9 @@ class CoinDrop:
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
     @commands.command("place")
     async def place_command(self, ctx: commands.Context):
+        if self.no_places:
+            return
+
         if not self.bot.db_available.is_set():
             return  # don't allow coin place if we can't connect to the db yet
 
@@ -171,6 +181,54 @@ class CoinDrop:
                 listing.append(f"{index+1}: <@{record['user_id']}> with {coin_text}")
 
         await ctx.send(embed=discord.Embed(description="\n".join(listing), color=0xff0000))
+
+    @commands.has_permissions(ban_members=True)
+    @commands.command("reset_user")
+    async def reset_user(self, ctx: commands.Context, user: discord.User):
+        if not self.bot.db_available.is_set():
+            await ctx.send("No connection to database.")
+            return
+
+        async with self.bot.db.acquire() as conn:
+            record = await conn.fetchrow("SELECT * FROM currency_users WHERE user_id = $1", user.id)
+            if record is None:
+                await ctx.send("This user doesn't have a database entry.")
+                return
+
+            await ctx.send(f"Are you sure? This user has {record['coins']} coins, last picking one up at "
+                           f"{record['last_picked']} UTC. (type 'confirm' or 'cancel')")
+
+            def wait_check(msg):
+                return msg.author.id == ctx.author.id and msg.content.lower() in ("confirm", "cancel")
+
+            try:
+                validate_message = await self.bot.wait_for('message', check=wait_check, timeout=30)
+            except asyncio.TimeoutError:
+                await ctx.send(f"Timed out request to reset {user.id}.")
+                return
+            else:
+                if validate_message.content.lower() == 'cancel':
+                    await ctx.send("Cancelled.")
+                    return
+
+                async with conn.transaction():
+                    await conn.execute("DELETE FROM currency_users WHERE user_id = $1", user.id)
+
+                await ctx.send(f"Cleared entry for {user.id}")
+
+    @commands.has_permissions(ban_members=True)
+    @commands.check(utils.check_granted_server)
+    @commands.command("drop_setting")
+    async def drop_setting(self, ctx: commands.Context, setting: bool):
+        self.no_drops = not setting
+        await ctx.send(f"{'Will' if setting else 'Will **NOT**'} do random drops.")
+
+    @commands.has_permissions(ban_members=True)
+    @commands.check(utils.check_granted_server)
+    @commands.command("place_setting")
+    async def place_setting(self, ctx: commands.Context, setting: bool):
+        self.no_places = not setting
+        await ctx.send(f"{'Will' if setting else 'Will **NOT**'} allow users to place new coins.")
 
 
 def setup(bot):
