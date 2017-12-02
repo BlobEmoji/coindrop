@@ -17,3 +17,8 @@ db_credentials:
   database: mydb
   password: "mypassword"
   timeout: 60
+
+currency:
+  singular: "<:blobcoin:386630453224013824> **Blob Coin**"
+  plural: "<:blobcoin:386630453224013824> **Blob Coins**"
+

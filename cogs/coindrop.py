@@ -30,6 +30,8 @@ class CoinDrop:
             cooldown = self.bot.config.get("cooldown_time", 20)
             recovery = self.bot.config.get("recovery_time", 10)
             drop_chance = self.bot.config.get("drop_chance", 0.1)
+            currency_name = self.bot.config.get("currency", {})
+            singular_coin = currency_name.get("singular", "coin")
 
             exponential_element = min(max((time.monotonic() - self.wait_until) / recovery, 0), 1)
 
@@ -38,7 +40,7 @@ class CoinDrop:
             probability = weight * drop_chance
 
             if random.random() < probability:
-                drop_message = await message.channel.send("A coin dropped! Type `.pick` to pick it up!")
+                drop_message = await message.channel.send(f"A {singular_coin} dropped! Type `.pick` to pick it up!")
                 self.last_drop = time.monotonic()
                 self.wait_until = self.last_drop + cooldown
 
@@ -74,12 +76,18 @@ class CoinDrop:
         if not self.bot.db_available.is_set():
             return
 
+        currency_name = self.bot.config.get("currency", {})
+        singular_coin = currency_name.get("singular", "coin")
+        plural_coin = currency_name.get("plural", "coins")
+
         async with self.bot.db.acquire() as conn:
             record = await conn.fetchrow("SELECT coins FROM currency_users WHERE user_id = $1", ctx.author.id)
             if record is None:
-                await ctx.send("You haven't picked up any coins yet!")
+                await ctx.send(f"You haven't picked up any {plural_coin} yet!")
             else:
-                await ctx.send(f"{ctx.author.mention} You have {record['coins']} coin(s).")
+                coins = record["coins"]
+                coin_text = f"{coins} {singular_coin if coins==1 else plural_coin}"
+                await ctx.send(f"{ctx.author.mention} You have {coin_text}.")
 
     @commands.cooldown(1, 5, commands.BucketType.channel)
     @commands.command("place")
@@ -89,6 +97,10 @@ class CoinDrop:
 
         if self.drop_lock.locked():
             return  # don't allow coin place if one is already dropped at random
+
+        currency_name = self.bot.config.get("currency", {})
+        singular_coin = currency_name.get("singular", "coin")
+        plural_coin = currency_name.get("plural", "coins")
 
         async with self.drop_lock:  # when someone places a coin, lock random coins from dropping
             async with self.bot.db.acquire() as conn:
@@ -102,10 +114,10 @@ class CoinDrop:
                         """, ctx.author.id)
 
                         if record is None:
-                            await ctx.send("You don't have any coins to drop!")
+                            await ctx.send(f"You don't have any {plural_coin} to drop!")
                             return
 
-                        drop_message = await ctx.send(f"{ctx.author.mention} dropped a coin! "
+                        drop_message = await ctx.send(f"{ctx.author.mention} dropped a {singular_coin}! "
                                                       f"Type `.pick` to pick it up!")
 
                         try:
@@ -115,8 +127,8 @@ class CoinDrop:
                             pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
                         except asyncio.TimeoutError:
                             await drop_message.delete()
-                            await ctx.send(f"{ctx.author.mention} Nobody picked up your coin, so it's been magically "
-                                           f"returned to your pocket. Woosh!")
+                            await ctx.send(f"{ctx.author.mention} Nobody picked up your {singular_coin}, so "
+                                           f"it's been returned to your pocket. Woosh!")
                             raise Rollback() from None
                         else:
                             await conn.execute("""
@@ -138,6 +150,10 @@ class CoinDrop:
         if not self.bot.db_available.is_set():
             return
 
+        currency_name = self.bot.config.get("currency", {})
+        singular_coin = currency_name.get("singular", "coin")
+        plural_coin = currency_name.get("plural", "coins")
+
         async with self.bot.db.acquire() as conn:
             records = await conn.fetch("""
             SELECT * FROM currency_users
@@ -145,10 +161,13 @@ class CoinDrop:
             LIMIT 5
             """)
 
-            text = "\n".join(f"{index+1}: <@{record['user_id']}> with {record['coins']} coin(s)"
-                             for index, record in enumerate(records))
+            listing = []
+            for index, record in enumerate(records):
+                coins = record["coins"]
+                coin_text = f"{coins} {singular_coin if coins==1 else plural_coin}"
+                listing.append(f"{index+1}: <@{record['user_id']}> with {coin_text}")
 
-        await ctx.send(embed=discord.Embed(description=text, color=0xff0000))
+        await ctx.send(embed=discord.Embed(description="\n".join(listing), color=0xff0000))
 
 
 def setup(bot):
