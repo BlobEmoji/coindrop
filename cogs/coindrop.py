@@ -21,7 +21,7 @@ class CoinDrop:
         self.wait_until = self.last_drop
         self.drop_lock = asyncio.Lock()
         self.no_drops = False
-        self.no_places = False
+        self.no_places = True
 
     async def on_message(self, message):
         if self.no_drops:
