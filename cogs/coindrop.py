@@ -57,7 +57,7 @@ class CoinDrop:
                 INSERT INTO currency_users (user_id, coins, last_picked)
                 VALUES ($1, 1, $2)
                 ON CONFLICT (user_id) DO UPDATE
-                SET coins = coins + 1,
+                SET coins = currency_users.coins + 1,
                 last_picked = $2
                 """, user_id, when)
 
