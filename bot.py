@@ -11,10 +11,13 @@ logger = logging.getLogger("dropbot")
 
 class DropBot(commands.Bot):
     def __init__(self, *args, config=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.config = config or {}
         self.db = None
         self.db_available = asyncio.Event()
-        super().__init__(*args, **kwargs)
+
+        self.loop.create_task(self.acquire_pool())
 
     async def acquire_pool(self):
         credentials = self.config.pop("db_credentials")

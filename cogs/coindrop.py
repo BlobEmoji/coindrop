@@ -10,38 +10,43 @@ class CoinDrop:
         self.bot = bot
         self.last_drop = time.monotonic()
         self.wait_until = self.last_drop
+        self.drop_lock = asyncio.Lock()
 
     async def on_message(self, message):
         if message.channel.id not in self.bot.config.get("drop_channels", []):
             return
 
-        cooldown = self.bot.config.get("cooldown_time", 20)
-        recovery = self.bot.config.get("recovery_time", 10)
-        drop_chance = self.bot.config.get("drop_chance", 0.1)
+        if self.drop_lock.locked():
+            return
 
-        exponential_element = min(max((time.monotonic() - self.wait_until) / recovery, 0), 1)
+        async with self.drop_lock:
+            cooldown = self.bot.config.get("cooldown_time", 20)
+            recovery = self.bot.config.get("recovery_time", 10)
+            drop_chance = self.bot.config.get("drop_chance", 0.1)
 
-        weight = exponential_element ** 3
+            exponential_element = min(max((time.monotonic() - self.wait_until) / recovery, 0), 1)
 
-        probability = weight * drop_chance
+            weight = exponential_element ** 3
 
-        if random.random() < probability:
-            drop_message = await message.channel.send("A coin dropped! Type `.pick` to pick it up!")
-            self.last_drop = time.monotonic()
-            self.wait_until = self.last_drop + cooldown
+            probability = weight * drop_chance
 
-            try:
-                def pick_check(m):
-                    return m.channel.id == message.channel.id and m.content.lower() == ".pick"
+            if random.random() < probability:
+                drop_message = await message.channel.send("A coin dropped! Type `.pick` to pick it up!")
+                self.last_drop = time.monotonic()
+                self.wait_until = self.last_drop + cooldown
 
-                pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
-            except asyncio.TimeoutError:
-                await drop_message.delete()
-                return
-            else:
-                self.bot.loop.create_task(self.add_coin(pick_message.author.id, pick_message.created_at))
-                await drop_message.delete()
-                await pick_message.delete()
+                try:
+                    def pick_check(m):
+                        return m.channel.id == message.channel.id and m.content.lower() == ".pick"
+
+                    pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
+                except asyncio.TimeoutError:
+                    await drop_message.delete()
+                    return
+                else:
+                    self.bot.loop.create_task(self.add_coin(pick_message.author.id, pick_message.created_at))
+                    await drop_message.delete()
+                    await pick_message.delete()
 
     async def add_coin(self, user_id, when):
         await self.bot.db_available.wait()
