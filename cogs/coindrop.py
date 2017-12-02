@@ -4,6 +4,7 @@ import asyncio
 import random
 import time
 
+import discord
 from discord.ext import commands
 
 
@@ -67,6 +68,7 @@ class CoinDrop:
                 last_picked = $2
                 """, user_id, when)
 
+    @commands.cooldown(1, 5, commands.BucketType.channel)
     @commands.command("check")
     async def check_command(self, ctx: commands.Context):
         if not self.bot.db_available.is_set():
@@ -79,6 +81,7 @@ class CoinDrop:
             else:
                 await ctx.send(f"{ctx.author.mention} You have {record['coins']} coin(s).")
 
+    @commands.cooldown(1, 5, commands.BucketType.channel)
     @commands.command("place")
     async def place_command(self, ctx: commands.Context):
         if not self.bot.db_available.is_set():
@@ -102,7 +105,7 @@ class CoinDrop:
                             await ctx.send("You don't have any coins to drop!")
                             return
 
-                        drop_message = await ctx.send(f"{ctx.author.mention} dropped a coin!"
+                        drop_message = await ctx.send(f"{ctx.author.mention} dropped a coin! "
                                                       f"Type `.pick` to pick it up!")
 
                         try:
@@ -128,6 +131,24 @@ class CoinDrop:
 
                 except Rollback:
                     pass
+
+    @commands.cooldown(1, 5, commands.BucketType.channel)
+    @commands.command("stats")
+    async def stats_command(self, ctx: commands.Context):
+        if not self.bot.db_available.is_set():
+            return
+
+        async with self.bot.db.acquire() as conn:
+            records = await conn.fetch("""
+            SELECT * FROM currency_users
+            ORDER BY -coins
+            LIMIT 5
+            """)
+
+            text = "\n".join(f"{index+1}: <@{record['user_id']}> with {record['coins']} coin(s)"
+                             for index, record in enumerate(records))
+
+        await ctx.send(embed=discord.Embed(description=text, color=0xff0000))
 
 
 def setup(bot):
