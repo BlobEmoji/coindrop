@@ -28,3 +28,6 @@ admin_users:
 
 pick_strings:
   - pick
+
+drop_strings:  # {singular} for singular, {plural} for plural, {cmd} for command name
+  - "A {singular} dropped! Type `.{cmd}` to {cmd} it!"
