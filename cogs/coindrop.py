@@ -251,7 +251,10 @@ class CoinDrop:
     @commands.command("pick", hidden=True)
     async def pick_command(self, ctx: commands.Context):
         """Pick up a coin, if you're quick!"""
-        await ctx.message.delete()  # this is handled in the waiting functions
+        try:
+            await ctx.message.delete()  # this is handled in the waiting functions
+        except discord.HTTPException:
+            pass
 
 
 def setup(bot):
