@@ -27,10 +27,11 @@ class CoinDrop:
 
     async def on_message(self, message):
         pick_strings = self.bot.config.get("pick_strings", ['pick'])
+        max_additional_delay = self.bot.config.get("additional_delay", 5)
 
         immediate_time = time.monotonic()
         if (self.last_pick and message.content.lower() == f".{self.last_pick}" and
-                immediate_time < (self.last_drop + 5)):
+                immediate_time < (self.last_drop + max_additional_delay)):
             if message.author.id not in self.additional_pickers:
                 self.additional_pickers.append(message.author.id)
                 self.bot.loop.create_task(self.add_coin(message.author.id, message.created_at))
