@@ -24,6 +24,12 @@ class CoinDrop:
         self.no_places = True
 
     async def on_message(self, message):
+        pick_strings = self.bot.config.get("pick_strings", ['pick'])
+
+        if message.content.lower().startswith(tuple(f".{pick_string}" for pick_string in pick_strings)):
+            await message.delete()
+            return
+
         if self.no_drops:
             return
 
@@ -42,7 +48,6 @@ class CoinDrop:
             drop_chance = self.bot.config.get("drop_chance", 0.1)
             currency_name = self.bot.config.get("currency", {})
             singular_coin = currency_name.get("singular", "coin")
-            pick_strings = self.bot.config.get("pick_strings", ['pick'])
 
             exponential_element = min(max((time.monotonic() - self.wait_until) / recovery, 0), 1)
 
@@ -254,14 +259,6 @@ class CoinDrop:
         """Set whether users can place coins or not."""
         self.no_places = not setting
         await ctx.send(f"{'Will' if setting else 'Will **NOT**'} allow users to place new coins.")
-
-    @commands.command("pick", aliases=["take", "grab"], hidden=True)
-    async def pick_command(self, ctx: commands.Context):
-        """Pick up a coin, if you're quick!"""
-        try:
-            await ctx.message.delete()  # this is handled in the waiting functions
-        except discord.HTTPException:
-            pass
 
 
 def setup(bot):
