@@ -183,7 +183,7 @@ class CoinDrop:
                             """, pick_message.author.id, pick_message.created_at)
                             await drop_message.delete()
                             await ctx.send(f"{pick_message.author.mention} grabbed "
-                                           f"{ctx.author.mentions}'s {singular_coin}!")
+                                           f"{ctx.author.mention}'s {singular_coin}!")
 
                 except Rollback:
                     pass
