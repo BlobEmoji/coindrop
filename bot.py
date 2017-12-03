@@ -49,3 +49,8 @@ class DropBot(commands.Bot):
             short_hash = error_hash[0:8]
             self.logger.error(f"Encountered command error [{error_hash}] ({msg.id}):\n{error_digest}")
             await ctx.send(f"Uh-oh, that's an error [{short_hash}...]")
+
+    async def is_owner(self, user):
+        if user.id in self.config.get("admin_users", []):
+            return True
+        return await super().is_owner(user)

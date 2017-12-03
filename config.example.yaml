@@ -22,3 +22,6 @@ currency:
   singular: "<:blobcoin:386630453224013824> **Blob Coin**"
   plural: "<:blobcoin:386630453224013824> **Blob Coins**"
 
+admin_users:
+  - 122122926760656896
+  - 69198249432449024
