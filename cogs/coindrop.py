@@ -66,7 +66,7 @@ class CoinDrop:
                 else:
                     self.bot.loop.create_task(self.add_coin(pick_message.author.id, pick_message.created_at))
                     await drop_message.delete()
-                    await pick_message.delete()
+                    await message.channel.send(f"{pick_message.author.mention} got the {singular_coin}!")
 
     async def add_coin(self, user_id, when):
         await self.bot.db_available.wait()
@@ -161,7 +161,8 @@ class CoinDrop:
                             last_picked = $2
                             """, pick_message.author.id, pick_message.created_at)
                             await drop_message.delete()
-                            await pick_message.delete()
+                            await ctx.send(f"{pick_message.author.mention} grabbed "
+                                           f"{ctx.author.mentions}'s {singular_coin}!")
 
                 except Rollback:
                     pass
@@ -243,6 +244,11 @@ class CoinDrop:
         """Set whether users can place coins or not."""
         self.no_places = not setting
         await ctx.send(f"{'Will' if setting else 'Will **NOT**'} allow users to place new coins.")
+
+    @commands.command("pick", hidden=True)
+    async def pick_command(self, ctx: commands.Context):
+        """Pick up a coin, if you're quick!"""
+        await ctx.message.delete()  # this is handled in the waiting functions
 
 
 def setup(bot):
