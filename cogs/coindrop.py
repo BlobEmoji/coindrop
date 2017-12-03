@@ -55,7 +55,11 @@ class CoinDrop:
                     def pick_check(m):
                         return m.channel.id == message.channel.id and m.content.lower() == ".pick"
 
+                    drop_time = time.monotonic()
                     pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
+                    pick_time = time.monotonic()
+                    self.bot.logger.info(f"User {pick_message.author.id} picked up a random coin in "
+                                         f"{pick_time-drop_time} seconds.")
                 except asyncio.TimeoutError:
                     await drop_message.delete()
                     return
@@ -138,7 +142,11 @@ class CoinDrop:
                             def pick_check(m):
                                 return m.channel.id == ctx.channel.id and m.content.lower() == ".pick"
 
+                            drop_time = time.monotonic()
                             pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
+                            pick_time = time.monotonic()
+                            self.bot.logger.info(f"User {pick_message.author.id} picked up a placed coin in "
+                                                 f"{pick_time-drop_time} seconds.")
                         except asyncio.TimeoutError:
                             await drop_message.delete()
                             await ctx.send(f"{ctx.author.mention} Nobody picked up your {singular_coin}, so "
