@@ -25,3 +25,6 @@ currency:
 admin_users:
   - 122122926760656896
   - 69198249432449024
+
+pick_strings:
+  - pick

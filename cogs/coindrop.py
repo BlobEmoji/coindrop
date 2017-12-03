@@ -42,6 +42,7 @@ class CoinDrop:
             drop_chance = self.bot.config.get("drop_chance", 0.1)
             currency_name = self.bot.config.get("currency", {})
             singular_coin = currency_name.get("singular", "coin")
+            pick_strings = self.bot.config.get("pick_strings", ['pick'])
 
             exponential_element = min(max((time.monotonic() - self.wait_until) / recovery, 0), 1)
 
@@ -49,21 +50,17 @@ class CoinDrop:
 
             probability = weight * drop_chance
 
-            pick_strings = [(".pick", "pick it up"),
-                            (".grab", "grab it"),
-                            (".take", "take it")]
-
             pick_string = random.choice(pick_strings)
 
             if random.random() < probability:
-                drop_message = await message.channel.send(f"A {singular_coin} dropped! Type `{pick_string[0]}` "
-                                                          f"to {pick_string[1]}!")
+                drop_message = await message.channel.send(f"A {singular_coin} dropped! Type `.{pick_string}` "
+                                                          f"to {pick_string} it!")
                 self.last_drop = time.monotonic()
                 self.wait_until = self.last_drop + cooldown
 
                 try:
                     def pick_check(m):
-                        return m.channel.id == message.channel.id and m.content.lower() == pick_string[0]
+                        return m.channel.id == message.channel.id and m.content.lower() == f".{pick_string}"
 
                     drop_time = time.monotonic()
                     pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
@@ -129,6 +126,7 @@ class CoinDrop:
         currency_name = self.bot.config.get("currency", {})
         singular_coin = currency_name.get("singular", "coin")
         plural_coin = currency_name.get("plural", "coins")
+        pick_strings = self.bot.config.get("pick_strings", ['pick'])
 
         async with self.drop_lock:  # when someone places a coin, lock random coins from dropping
             async with self.bot.db.acquire() as conn:
@@ -145,12 +143,14 @@ class CoinDrop:
                             await ctx.send(f"You don't have any {plural_coin} to drop!")
                             return
 
+                        pick_string = random.choice(pick_strings)
+
                         drop_message = await ctx.send(f"{ctx.author.mention} dropped a {singular_coin}! "
-                                                      f"Type `.pick` to pick it up!")
+                                                      f"Type `.{pick_string}` to {pick_string} it!")
 
                         try:
                             def pick_check(m):
-                                return m.channel.id == ctx.channel.id and m.content.lower() == ".pick"
+                                return m.channel.id == ctx.channel.id and m.content.lower() == f".{pick_string}"
 
                             drop_time = time.monotonic()
                             pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
