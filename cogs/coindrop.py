@@ -22,9 +22,20 @@ class CoinDrop:
         self.drop_lock = asyncio.Lock()
         self.no_drops = False
         self.no_places = True
+        self.last_pick = None
+        self.additional_pickers = []
 
     async def on_message(self, message):
         pick_strings = self.bot.config.get("pick_strings", ['pick'])
+
+        immediate_time = time.monotonic()
+        if (self.last_pick and message.content.lower() == f".{self.last_pick}" and
+                immediate_time < (self.last_drop + 5)):
+            if message.author.id not in self.additional_pickers:
+                self.additional_pickers.append(message.author.id)
+                self.bot.loop.create_task(self.add_coin(message.author.id, message.created_at))
+                self.bot.logger.info(f"User {message.author.id} additional-picked random coin in "
+                                     f"{immediate_time-self.last_drop} seconds.")
 
         if message.content.lower().startswith(tuple(f".{pick_string}" for pick_string in pick_strings)):
             await message.delete()
@@ -66,6 +77,8 @@ class CoinDrop:
             if random.random() < probability:
                 drop_message = await message.channel.send(drop_string.format(singular=singular_coin, plural=plural_coin,
                                                                              cmd=pick_string))
+                self.additional_pickers = []
+                self.last_pick = pick_string
                 self.last_drop = time.monotonic()
                 self.wait_until = self.last_drop + cooldown
 
@@ -83,8 +96,9 @@ class CoinDrop:
                     return
                 else:
                     self.bot.loop.create_task(self.add_coin(pick_message.author.id, pick_message.created_at))
+                    await message.channel.send(f"{pick_message.author.mention} grabbed the {singular_coin} first!")
+                    await asyncio.sleep(1)
                     await drop_message.delete()
-                    await message.channel.send(f"{pick_message.author.mention} got the {singular_coin}!")
 
     async def add_coin(self, user_id, when):
         await self.bot.db_available.wait()
