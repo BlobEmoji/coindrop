@@ -122,6 +122,7 @@ class CoinDrop:
 
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
+    @commands.check(utils.in_drop_channel)
     @commands.command("place", enabled=False)
     async def place_command(self, ctx: commands.Context):
         """Place down a coin for others to pick up"""
@@ -217,6 +218,7 @@ class CoinDrop:
         await ctx.send(embed=discord.Embed(description="\n".join(listing), color=0xff0000))
 
     @commands.has_permissions(ban_members=True)
+    @commands.check(utils.check_granted_server)
     @commands.command("reset_user")
     async def reset_user(self, ctx: commands.Context, user: discord.User):
         """Reset users' coin accounts"""
