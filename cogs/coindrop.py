@@ -27,6 +27,9 @@ class CoinDrop:
         if self.no_drops:
             return
 
+        if message.content.startswith("."):
+            return  # do not drop coins on commands
+
         if message.channel.id not in self.bot.config.get("drop_channels", []):
             return
 
