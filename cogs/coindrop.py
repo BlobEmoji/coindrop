@@ -49,14 +49,21 @@ class CoinDrop:
 
             probability = weight * drop_chance
 
+            pick_strings = [(".pick", "pick it up"),
+                            (".grab", "grab it"),
+                            (".take", "take it")]
+
+            pick_string = random.choice(pick_strings)
+
             if random.random() < probability:
-                drop_message = await message.channel.send(f"A {singular_coin} dropped! Type `.pick` to pick it up!")
+                drop_message = await message.channel.send(f"A {singular_coin} dropped! Type `{pick_string[0]}` "
+                                                          f"to {pick_string[1]}!")
                 self.last_drop = time.monotonic()
                 self.wait_until = self.last_drop + cooldown
 
                 try:
                     def pick_check(m):
-                        return m.channel.id == message.channel.id and m.content.lower() == ".pick"
+                        return m.channel.id == message.channel.id and m.content.lower() == pick_string[0]
 
                     drop_time = time.monotonic()
                     pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
@@ -107,7 +114,7 @@ class CoinDrop:
 
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
-    @commands.command("place")
+    @commands.command("place", enabled=False)
     async def place_command(self, ctx: commands.Context):
         """Place down a coin for others to pick up"""
         if self.no_places:
@@ -248,7 +255,7 @@ class CoinDrop:
         self.no_places = not setting
         await ctx.send(f"{'Will' if setting else 'Will **NOT**'} allow users to place new coins.")
 
-    @commands.command("pick", hidden=True)
+    @commands.command("pick", aliases=["take", "grab"], hidden=True)
     async def pick_command(self, ctx: commands.Context):
         """Pick up a coin, if you're quick!"""
         try:
