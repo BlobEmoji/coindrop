@@ -161,7 +161,8 @@ class CoinDrop:
 
                         try:
                             def pick_check(m):
-                                return m.channel.id == ctx.channel.id and m.content.lower() == f".{pick_string}"
+                                return (m.channel.id == ctx.channel.id and m.content.lower() == f".{pick_string}"
+                                        and m.author.id != ctx.author.id)
 
                             drop_time = time.monotonic()
                             pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
