@@ -120,6 +120,7 @@ class CoinDrop:
                 coin_text = f"{coins} {singular_coin if coins==1 else plural_coin}"
                 await ctx.send(f"{ctx.author.mention} You have {coin_text}.")
 
+    @commands.guild_only()
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
     @commands.command("place", enabled=False)
