@@ -82,6 +82,7 @@ class CoinDrop:
                 self.last_pick = pick_string
                 self.last_drop = time.monotonic()
                 self.wait_until = self.last_drop + cooldown
+                self.bot.loop.create_task(self.count_additional(message, max_additional_delay))
 
                 try:
                     def pick_check(m):
@@ -113,6 +114,12 @@ class CoinDrop:
                 SET coins = currency_users.coins + 1,
                 last_picked = $2
                 """, user_id, when)
+
+    async def count_additional(self, message, wait_time):
+        await asyncio.sleep(wait_time)
+        picker_count = len(self.additional_pickers)
+        if picker_count > 1:
+            await message.channel.send(f"({picker_count} users were fast enough to get a bonus coin)")
 
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
