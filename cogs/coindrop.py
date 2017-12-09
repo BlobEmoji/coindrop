@@ -308,10 +308,11 @@ class CoinDrop:
     @commands.check(utils.check_granted_server)
     @commands.command("force_spawn")
     async def force_spawn_command(self, ctx: commands.Context, where: discord.TextChannel = None):
+        """Force spawns a coin in a given channel."""
         if where is None:
             await ctx.send("You must specify a drop channel.")
             return
-        
+
         if not self.bot.db_available.is_set():
             await ctx.send("Cannot access the db right now.")
             return
