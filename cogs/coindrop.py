@@ -23,6 +23,7 @@ class CoinDrop:
         self.no_drops = False
         self.no_places = True
         self.last_pick = None
+        self.last_coin_id = None
         self.additional_pickers = []
 
     async def on_message(self, message):
@@ -35,7 +36,7 @@ class CoinDrop:
             if message.author.id not in self.additional_pickers:
                 self.additional_pickers.append(message.author.id)
                 self.bot.loop.create_task(self.add_coin(message.author.id, message.created_at))
-                self.bot.logger.info(f"User {message.author.id} additional-picked random coin in "
+                self.bot.logger.info(f"User {message.author.id} additional-picked random coin ({self.last_coin_id}) in "
                                      f"{immediate_time-self.last_drop} seconds.")
 
         if message.content.lower().startswith(tuple(f".{pick_string}" for pick_string in pick_strings)):
@@ -54,10 +55,27 @@ class CoinDrop:
         if self.drop_lock.locked():
             return
 
+        recovery = self.bot.config.get("recovery_time", 10)
+        drop_chance = self.bot.config.get("drop_chance", 0.1)
+
+        exponential_element = min(max((time.monotonic() - self.wait_until) / recovery, 0), 1)
+
+        weight = exponential_element ** 3
+
+        probability = weight * drop_chance
+
+        if random.random() < probability:
+            coin_id = '%016x' % random.randrange(16**16)
+            self.bot.logger.info(f"A natural random coin has dropped ({coin_id})")
+            self.last_coin_id = coin_id
+            await self.perform_natural_drop(message.channel, coin_id)
+
+    async def perform_natural_drop(self, channel, coin_id):
         async with self.drop_lock:
+            pick_strings = self.bot.config.get("pick_strings", ['pick'])
+            max_additional_delay = self.bot.config.get("additional_delay", 5)
+
             cooldown = self.bot.config.get("cooldown_time", 20)
-            recovery = self.bot.config.get("recovery_time", 10)
-            drop_chance = self.bot.config.get("drop_chance", 0.1)
 
             currency_name = self.bot.config.get("currency", {})
             singular_coin = currency_name.get("singular", "coin")
@@ -66,41 +84,34 @@ class CoinDrop:
             drop_strings = self.bot.config.get("drop_strings",
                                                ["A {singular} dropped! Type `.{cmd}` to {cmd} it!"])
 
-            exponential_element = min(max((time.monotonic() - self.wait_until) / recovery, 0), 1)
-
-            weight = exponential_element ** 3
-
-            probability = weight * drop_chance
-
             pick_string = random.choice(pick_strings)
             drop_string = random.choice(drop_strings)
 
-            if random.random() < probability:
-                drop_message = await message.channel.send(drop_string.format(singular=singular_coin, plural=plural_coin,
-                                                                             cmd=pick_string))
-                self.additional_pickers = []
-                self.last_pick = pick_string
-                self.last_drop = time.monotonic()
-                self.wait_until = self.last_drop + cooldown
-                self.bot.loop.create_task(self.count_additional(message, max_additional_delay))
+            drop_message = await channel.send(drop_string.format(singular=singular_coin, plural=plural_coin,
+                                                                 cmd=pick_string))
+            self.additional_pickers = []
+            self.last_pick = pick_string
+            self.last_drop = time.monotonic()
+            self.wait_until = self.last_drop + cooldown
+            self.bot.loop.create_task(self.count_additional(channel, max_additional_delay))
 
-                try:
-                    def pick_check(m):
-                        return m.channel.id == message.channel.id and m.content.lower() == f".{pick_string}"
+            try:
+                def pick_check(m):
+                    return m.channel.id == channel.id and m.content.lower() == f".{pick_string}"
 
-                    drop_time = time.monotonic()
-                    pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
-                    pick_time = time.monotonic()
-                    self.bot.logger.info(f"User {pick_message.author.id} picked up a random coin in "
-                                         f"{pick_time-drop_time} seconds.")
-                except asyncio.TimeoutError:
-                    await drop_message.delete()
-                    return
-                else:
-                    self.bot.loop.create_task(self.add_coin(pick_message.author.id, pick_message.created_at))
-                    await message.channel.send(f"{pick_message.author.mention} grabbed the {singular_coin} first!")
-                    await asyncio.sleep(1)
-                    await drop_message.delete()
+                drop_time = time.monotonic()
+                pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
+                pick_time = time.monotonic()
+                self.bot.logger.info(f"User {pick_message.author.id} picked up a random coin ({coin_id}) in "
+                                     f"{pick_time-drop_time} seconds.")
+            except asyncio.TimeoutError:
+                await drop_message.delete()
+                return
+            else:
+                self.bot.loop.create_task(self.add_coin(pick_message.author.id, pick_message.created_at))
+                await channel.send(f"{pick_message.author.mention} grabbed the {singular_coin} first!")
+                await asyncio.sleep(1)
+                await drop_message.delete()
 
     async def add_coin(self, user_id, when):
         await self.bot.db_available.wait()
@@ -115,11 +126,11 @@ class CoinDrop:
                 last_picked = $2
                 """, user_id, when)
 
-    async def count_additional(self, message, wait_time):
+    async def count_additional(self, channel, wait_time):
         await asyncio.sleep(wait_time)
         picker_count = len(self.additional_pickers)
         if picker_count > 1:
-            await message.channel.send(f"({picker_count} users were fast enough to get a bonus coin)")
+            await channel.send(f"({picker_count} users were fast enough to get a bonus coin)")
 
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
@@ -179,6 +190,9 @@ class CoinDrop:
 
                         pick_string = random.choice(pick_strings)
 
+                        coin_id = '%016x' % random.randrange(16 ** 16)
+                        self.bot.logger.info(f"{ctx.author.id} placed coin ({coin_id})")
+
                         drop_message = await ctx.send(f"{ctx.author.mention} dropped a {singular_coin}! "
                                                       f"Type `.{pick_string}` to {pick_string} it!")
 
@@ -190,8 +204,8 @@ class CoinDrop:
                             drop_time = time.monotonic()
                             pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
                             pick_time = time.monotonic()
-                            self.bot.logger.info(f"User {pick_message.author.id} picked up a placed coin in "
-                                                 f"{pick_time-drop_time} seconds.")
+                            self.bot.logger.info(f"User {pick_message.author.id} picked up a placed coin ({coin_id}) "
+                                                 f"in {pick_time-drop_time} seconds.")
                         except asyncio.TimeoutError:
                             await drop_message.delete()
                             await ctx.send(f"{ctx.author.mention} Nobody picked up your {singular_coin}, so "
@@ -208,7 +222,6 @@ class CoinDrop:
                             await drop_message.delete()
                             await ctx.send(f"{pick_message.author.mention} grabbed "
                                            f"{ctx.author.mention}'s {singular_coin}!")
-
                 except Rollback:
                     pass
 
@@ -290,6 +303,28 @@ class CoinDrop:
         """Set whether users can place coins or not."""
         self.no_places = not setting
         await ctx.send(f"{'Will' if setting else 'Will **NOT**'} allow users to place new coins.")
+
+    @commands.has_permissions(ban_members=True)
+    @commands.check(utils.check_granted_server)
+    @commands.command("force_spawn")
+    async def force_spawn_command(self, ctx: commands.Context, where: discord.TextChannel):
+        if not self.bot.db_available.is_set():
+            await ctx.send("Cannot access the db right now.")
+            return
+
+        if self.drop_lock.locked():
+            await ctx.send("A coin is already spawned somewhere.")
+            return
+
+        if where.id not in self.bot.config.get("drop_channels", []):
+            await ctx.send("Channel is not in drop list.")
+            return
+
+        async with self.drop_lock:
+            coin_id = '%016x' % random.randrange(16 ** 16)
+            self.bot.logger.info(f"A random coin was force dropped by {ctx.author.id} ({coin_id})")
+            self.last_coin_id = coin_id
+            await self.perform_natural_drop(where, coin_id)
 
 
 def setup(bot):
