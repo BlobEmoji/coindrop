@@ -304,6 +304,13 @@ class CoinDrop:
         self.no_places = not setting
         await ctx.send(f"{'Will' if setting else 'Will **NOT**'} allow users to place new coins.")
 
+    @staticmethod
+    async def attempt_add_reaction(message: discord.Message, reaction):
+        try:
+            await message.add_reaction(reaction)
+        except discord.HTTPException:
+            pass
+
     @commands.has_permissions(ban_members=True)
     @commands.check(utils.check_granted_server)
     @commands.command("force_spawn")
@@ -328,6 +335,7 @@ class CoinDrop:
         coin_id = '%016x' % random.randrange(16 ** 16)
         self.bot.logger.info(f"A random coin was force dropped by {ctx.author.id} ({coin_id})")
         self.last_coin_id = coin_id
+        self.bot.loop.create_task(self.attempt_add_reaction(ctx.message, "\N{WHITE HEAVY CHECK MARK}"))
         await self.perform_natural_drop(where, coin_id)
 
 
