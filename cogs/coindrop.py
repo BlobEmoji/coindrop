@@ -320,11 +320,10 @@ class CoinDrop:
             await ctx.send("Channel is not in drop list.")
             return
 
-        async with self.drop_lock:
-            coin_id = '%016x' % random.randrange(16 ** 16)
-            self.bot.logger.info(f"A random coin was force dropped by {ctx.author.id} ({coin_id})")
-            self.last_coin_id = coin_id
-            await self.perform_natural_drop(where, coin_id)
+        coin_id = '%016x' % random.randrange(16 ** 16)
+        self.bot.logger.info(f"A random coin was force dropped by {ctx.author.id} ({coin_id})")
+        self.last_coin_id = coin_id
+        await self.perform_natural_drop(where, coin_id)
 
 
 def setup(bot):
