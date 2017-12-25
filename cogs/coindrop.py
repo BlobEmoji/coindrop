@@ -228,7 +228,7 @@ class CoinDrop:
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
     @commands.command("stats")
-    async def stats_command(self, ctx: commands.Context):
+    async def stats_command(self, ctx: commands.Context, *, mode: str=''):
         """Coin leaderboard"""
         if not self.bot.db_available.is_set():
             return
@@ -237,12 +237,17 @@ class CoinDrop:
         singular_coin = currency_name.get("singular", "coin")
         plural_coin = currency_name.get("plural", "coins")
 
+        limit = 8
+
+        if mode == 'long' and ctx.author.guild_permissions.ban_members:
+            limit = 25
+
         async with self.bot.db.acquire() as conn:
             records = await conn.fetch("""
             SELECT * FROM currency_users
             ORDER BY -coins
-            LIMIT 5
-            """)
+            LIMIT $1
+            """, limit)
 
             listing = []
             for index, record in enumerate(records):
