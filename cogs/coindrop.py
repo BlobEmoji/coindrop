@@ -272,11 +272,13 @@ class CoinDrop:
                 await ctx.send("This user doesn't have a database entry.")
                 return
 
+            confirm_text = f"confirm {random.randint(0, 999999):06}"
+
             await ctx.send(f"Are you sure? This user has {record['coins']} coins, last picking one up at "
-                           f"{record['last_picked']} UTC. (type 'confirm' or 'cancel')")
+                           f"{record['last_picked']} UTC. (type '{confirm_text}' or 'cancel')")
 
             def wait_check(msg):
-                return msg.author.id == ctx.author.id and msg.content.lower() in ("confirm", "cancel")
+                return msg.author.id == ctx.author.id and msg.content.lower() in (confirm_text, "cancel")
 
             try:
                 validate_message = await self.bot.wait_for('message', check=wait_check, timeout=30)
