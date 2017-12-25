@@ -153,10 +153,10 @@ class CoinDrop:
                 coin_text = f"{coins} {singular_coin if coins==1 else plural_coin}"
                 await ctx.send(f"{ctx.author.mention} You have {coin_text}.")
 
-    @commands.cooldown(1, 4, commands.BucketType.user)
-    @commands.cooldown(1, 1.5, commands.BucketType.channel)
+    @commands.cooldown(1, 12, commands.BucketType.user)
+    @commands.cooldown(1, 5, commands.BucketType.channel)
     @commands.check(utils.in_drop_channel)
-    @commands.command("place", enabled=False)
+    @commands.command("place")
     async def place_command(self, ctx: commands.Context):
         """Place down a coin for others to pick up"""
         if self.no_places:
