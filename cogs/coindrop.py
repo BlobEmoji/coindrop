@@ -306,7 +306,7 @@ class CoinDrop:
     async def drop_setting(self, ctx: commands.Context, setting: bool=None):
         """Set whether coins will drop at random or not."""
         if setting is None:
-            await ctx.send(f"Currently {'NOT' if self.no_drops else ''} doing random drops.")
+            await ctx.send(f"Currently{' NOT' if self.no_drops else ''} doing random drops.")
             return
 
         self.no_drops = not setting
@@ -318,7 +318,7 @@ class CoinDrop:
     async def place_setting(self, ctx: commands.Context, setting: bool=None):
         """Set whether users can place coins or not."""
         if setting is None:
-            await ctx.send(f"Currently {'NOT' if self.no_places else ''} allowing new coins to be placed.")
+            await ctx.send(f"Currently{' NOT' if self.no_places else ''} allowing new coins to be placed.")
             return
 
         self.no_places = not setting
