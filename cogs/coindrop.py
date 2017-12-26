@@ -298,18 +298,26 @@ class CoinDrop:
     @commands.has_permissions(ban_members=True)
     @commands.check(utils.check_granted_server)
     @commands.command("drop_setting")
-    async def drop_setting(self, ctx: commands.Context, setting: bool):
+    async def drop_setting(self, ctx: commands.Context, setting: bool=None):
         """Set whether coins will drop at random or not."""
+        if setting is None:
+            await ctx.send(f"Currently {'NOT' if self.no_drops else ''} doing random drops.")
+            return
+
         self.no_drops = not setting
-        await ctx.send(f"{'Will' if setting else 'Will **NOT**'} do random drops.")
+        await ctx.send(f"Will{'' if setting else ' **NOT**'} do random drops.")
 
     @commands.has_permissions(ban_members=True)
     @commands.check(utils.check_granted_server)
     @commands.command("place_setting")
-    async def place_setting(self, ctx: commands.Context, setting: bool):
+    async def place_setting(self, ctx: commands.Context, setting: bool=None):
         """Set whether users can place coins or not."""
+        if setting is None:
+            await ctx.send(f"Currently {'NOT' if self.no_places else ''} allowing new coins to be placed.")
+            return
+
         self.no_places = not setting
-        await ctx.send(f"{'Will' if setting else 'Will **NOT**'} allow users to place new coins.")
+        await ctx.send(f"Will{'' if setting else ' **NOT**'} allow users to place new coins.")
 
     @staticmethod
     async def attempt_add_reaction(message: discord.Message, reaction):
