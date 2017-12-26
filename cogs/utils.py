@@ -3,10 +3,7 @@
 
 def check_granted_server(ctx):
     allowed_channels = map(ctx.bot.get_channel, ctx.bot.config.get("drop_channels", []))
-    allowed_guilds = set([channel.guild for channel in allowed_channels if channel])
-    if ctx.guild in allowed_guilds:
-        return True
-    return False
+    return ctx.guild in set([channel.guild for channel in allowed_channels if channel])
 
 
 def in_drop_channel(ctx):
