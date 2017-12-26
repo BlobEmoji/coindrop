@@ -30,6 +30,7 @@ class CoinDrop:
         pick_strings = self.bot.config.get("pick_strings", ['pick'])
         max_additional_delay = self.bot.config.get("additional_delay", 5)
 
+        successful_pick = False
         immediate_time = time.monotonic()
         if (self.last_pick and message.content.lower() == f".{self.last_pick}" and
                 immediate_time < (self.last_drop + max_additional_delay)):
@@ -38,9 +39,13 @@ class CoinDrop:
                 self.bot.loop.create_task(self.add_coin(message.author.id, message.created_at))
                 self.bot.logger.info(f"User {message.author.id} additional-picked random coin ({self.last_coin_id}) in "
                                      f"{immediate_time-self.last_drop} seconds.")
+                successful_pick = True
 
         if message.content.lower().startswith(tuple(f".{pick_string}" for pick_string in pick_strings)):
             await message.delete()
+            if not successful_pick:
+                self.bot.logger.info(f"User {message.author.id} attempted to pick a coin ({self.last_coin_id}) but "
+                                     f"failed ({immediate_time-self.last_drop} seconds)")
             return
 
         if self.no_drops:
