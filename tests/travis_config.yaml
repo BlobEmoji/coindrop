@@ -1,0 +1,32 @@
+
+token: ""
+
+drop_channels:
+  - 123456789012345678
+
+cooldown_time: 20  # seconds for cooldown
+
+recovery_time: 10  # seconds for probability to recover after cooldown expires
+
+drop_chance: 0.1  # chance for drop per message as float (0.1 is 10%, etc)
+
+db_credentials:
+  host: localhost
+  port: 5432
+  user: postgres
+  database: travis_testdb
+  timeout: 60
+
+currency:
+  singular: "<:blobcoin:386630453224013824> **Blob Coin**"
+  plural: "<:blobcoin:386630453224013824> **Blob Coins**"
+
+admin_users:
+  - 234567890123456789
+  - 345678901234567890
+
+pick_strings:
+  - pick
+
+drop_strings:  # {singular} for singular, {plural} for plural, {cmd} for command name
+  - "A {singular} dropped! Type `.{cmd}` to {cmd} it!"

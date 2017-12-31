@@ -26,7 +26,7 @@ logging.getLogger().addHandler(handler)
 logging.getLogger().addHandler(stream)
 
 with open("config.yaml", 'rb') as fp:
-    config = yaml.load(fp)
+    config = yaml.safe_load(fp)
 
 token = config.pop("token")
 
