@@ -38,14 +38,14 @@ class CoinDrop:
                 self.additional_pickers.append(message.author.id)
                 self.bot.loop.create_task(self.add_coin(message.author.id, message.created_at))
                 self.bot.logger.info(f"User {message.author.id} additional-picked random coin ({self.last_coin_id}) in "
-                                     f"{immediate_time-self.last_drop} seconds.")
+                                     f"{immediate_time-self.last_drop:.3f} seconds.")
                 successful_pick = True
 
         if message.content.lower().startswith(tuple(f".{pick_string}" for pick_string in pick_strings)):
             await message.delete()
             if not successful_pick:
                 self.bot.logger.info(f"User {message.author.id} attempted to pick a coin ({self.last_coin_id}) but "
-                                     f"failed ({immediate_time-self.last_drop} seconds)")
+                                     f"failed ({immediate_time-self.last_drop:.3f} seconds)")
             return
 
         if self.no_drops:
@@ -108,7 +108,7 @@ class CoinDrop:
                 pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
                 pick_time = time.monotonic()
                 self.bot.logger.info(f"User {pick_message.author.id} picked up a random coin ({coin_id}) in "
-                                     f"{pick_time-drop_time} seconds.")
+                                     f"{pick_time-drop_time:.3f} seconds.")
             except asyncio.TimeoutError:
                 await drop_message.delete()
                 return
@@ -210,7 +210,7 @@ class CoinDrop:
                             pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
                             pick_time = time.monotonic()
                             self.bot.logger.info(f"User {pick_message.author.id} picked up a placed coin ({coin_id}) "
-                                                 f"in {pick_time-drop_time} seconds.")
+                                                 f"in {pick_time-drop_time:.3f} seconds.")
                         except asyncio.TimeoutError:
                             await drop_message.delete()
                             await ctx.send(f"{ctx.author.mention} Nobody picked up your {singular_coin}, so "
