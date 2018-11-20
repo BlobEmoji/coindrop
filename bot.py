@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-import asyncpg
 import hashlib
 import logging
 import traceback
+
+import aiohttp
+import asyncpg
 
 import discord
 from discord.ext import commands
@@ -18,6 +20,7 @@ class DropBot(commands.Bot):
         self.db = None
         self.db_available = asyncio.Event()
         self.logger = logging.getLogger("dropbot")
+        self.session = aiohttp.ClientSession(loop=self.loop)
 
         self.loop.create_task(self.acquire_pool())
 

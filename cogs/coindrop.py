@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+import itertools
 import random
 import time
+from io import BytesIO
+
+from PIL import Image, ImageFilter
 
 import discord
 from discord.ext import commands
@@ -21,32 +25,22 @@ class CoinDrop:
         self.wait_until = self.last_drop
         self.drop_lock = asyncio.Lock()
         self.no_drops = False
-        self.no_places = True
-        self.last_pick = None
+        self.blob_options = []
         self.last_coin_id = None
         self.additional_pickers = []
 
     async def on_message(self, message):
-        pick_strings = self.bot.config.get("pick_strings", ['pick'])
         max_additional_delay = self.bot.config.get("additional_delay", 5)
 
-        successful_pick = False
         immediate_time = time.monotonic()
-        if (self.last_pick and message.content.lower() == f".{self.last_pick}" and
+        if (message.content.lower() in self.blob_options and
                 immediate_time < (self.last_drop + max_additional_delay)):
             if message.author.id not in self.additional_pickers:
                 self.additional_pickers.append(message.author.id)
                 self.bot.loop.create_task(self.add_coin(message.author.id, message.created_at))
-                self.bot.logger.info(f"User {message.author.id} additional-picked random coin ({self.last_coin_id}) in "
+                self.bot.logger.info(f"User {message.author.id} additional-guessed blob ({self.last_coin_id}) in "
                                      f"{immediate_time-self.last_drop:.3f} seconds.")
-                successful_pick = True
-
-        if message.content.lower().startswith(tuple(f".{pick_string}" for pick_string in pick_strings)):
-            await message.delete()
-            if not successful_pick:
-                self.bot.logger.info(f"User {message.author.id} attempted to pick a coin ({self.last_coin_id}) but "
-                                     f"failed ({immediate_time-self.last_drop:.3f} seconds)")
-            return
+                return
 
         if self.no_drops:
             return
@@ -71,52 +65,81 @@ class CoinDrop:
 
         if random.random() < probability:
             coin_id = '%016x' % random.randrange(16**16)
-            self.bot.logger.info(f"A natural random coin has dropped ({coin_id})")
+            self.bot.logger.info(f"A natural blob has dropped ({coin_id})")
             self.last_coin_id = coin_id
             await self.perform_natural_drop(message.channel, coin_id)
 
     async def perform_natural_drop(self, channel, coin_id):
         async with self.drop_lock:
-            pick_strings = self.bot.config.get("pick_strings", ['pick'])
             max_additional_delay = self.bot.config.get("additional_delay", 5)
 
             cooldown = self.bot.config.get("cooldown_time", 20)
 
             currency_name = self.bot.config.get("currency", {})
             singular_coin = currency_name.get("singular", "coin")
-            plural_coin = currency_name.get("plural", "coins")
 
             drop_strings = self.bot.config.get("drop_strings",
-                                               ["A {singular} dropped! Type `.{cmd}` to {cmd} it!"])
+                                               ["I found this blob, but I can't remember what it's called! What was it?"])
 
-            pick_string = random.choice(pick_strings)
             drop_string = random.choice(drop_strings)
 
-            drop_message = await channel.send(drop_string.format(singular=singular_coin, plural=plural_coin,
-                                                                 cmd=pick_string))
+            # round up all emojis and pick one
+            guild_ids = self.bot.config.get("emoji_sources", [272885620769161216])
+            guilds = tuple(filter(None, map(self.bot.get_guild, guild_ids)))
+            emojis = tuple(filter(lambda x: not x.animated, itertools.chain(g.emojis for g in guilds)))
+
+            if not emojis:
+                self.bot.logger.error(f"I wanted to drop a blob, but I couldn't find any suitable emoji!")
+                return
+
+            emoji_chosen = random.choice(emojis)
+
+            # now let's go get it
+            async with self.bot.session.get(emoji_chosen.url) as resp:
+                emoji_bytes = await resp.read()
+
+            # perform a filter and get new file
+            file = await self.bot.loop.run_in_executor(None, self.do_filters, emoji_bytes)
+
+            drop_message = await channel.send(drop_string, file=file)
+
             self.additional_pickers = []
-            self.last_pick = pick_string
+            self.blob_options = [emoji_chosen.name, str(emoji_chosen)]
             self.last_drop = time.monotonic()
             self.wait_until = self.last_drop + cooldown
             self.bot.loop.create_task(self.count_additional(channel, max_additional_delay))
 
             try:
                 def pick_check(m):
-                    return m.channel.id == channel.id and m.content.lower() == f".{pick_string}"
+                    return m.channel.id == channel.id and m.content.lower() in self.blob_options
 
                 drop_time = time.monotonic()
                 pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
                 pick_time = time.monotonic()
-                self.bot.logger.info(f"User {pick_message.author.id} picked up a random coin ({coin_id}) in "
+                self.bot.logger.info(f"User {pick_message.author.id} correctly guessed a blob ({coin_id}) in "
                                      f"{pick_time-drop_time:.3f} seconds.")
             except asyncio.TimeoutError:
                 await drop_message.delete()
                 return
             else:
                 self.bot.loop.create_task(self.add_coin(pick_message.author.id, pick_message.created_at))
-                await channel.send(f"{pick_message.author.mention} grabbed the {singular_coin} first!")
+                await channel.send(f"{pick_message.author.mention} That's the one! Have a {singular_coin}!")
                 await asyncio.sleep(1)
                 await drop_message.delete()
+
+    def do_filters(self, image_bytes: bytes) -> discord.File:
+        with Image.open(BytesIO(image_bytes)) as im:
+            filter_chosen = random.choice((
+                ImageFilter.GaussianBlur(radius=3),
+                ImageFilter.UnsharpMask()
+            ))
+
+            with im.filter(filter_chosen) as im2:
+                buffer = BytesIO()
+                im2.save(buffer, 'png')
+        
+        buffer.seek(0)
+        return discord.File(fp=buffer, filename="blob.png")
 
     async def add_coin(self, user_id, when):
         await self.bot.db_available.wait()
@@ -152,83 +175,11 @@ class CoinDrop:
         async with self.bot.db.acquire() as conn:
             record = await conn.fetchrow("SELECT coins FROM currency_users WHERE user_id = $1", ctx.author.id)
             if record is None:
-                await ctx.send(f"You haven't picked up any {plural_coin} yet!")
+                await ctx.send(f"You haven't got any {plural_coin} yet!")
             else:
                 coins = record["coins"]
                 coin_text = f"{coins} {singular_coin if coins==1 else plural_coin}"
                 await ctx.send(f"{ctx.author.mention} You have {coin_text}.")
-
-    @commands.cooldown(1, 12, commands.BucketType.user)
-    @commands.cooldown(1, 5, commands.BucketType.channel)
-    @commands.check(utils.in_drop_channel)
-    @commands.command("place")
-    async def place_command(self, ctx: commands.Context):
-        """Place down a coin for others to pick up"""
-        if self.no_places:
-            return
-
-        if not self.bot.db_available.is_set():
-            return  # don't allow coin place if we can't connect to the db yet
-
-        if self.drop_lock.locked():
-            return  # don't allow coin place if one is already dropped at random
-
-        currency_name = self.bot.config.get("currency", {})
-        singular_coin = currency_name.get("singular", "coin")
-        plural_coin = currency_name.get("plural", "coins")
-        pick_strings = self.bot.config.get("pick_strings", ['pick'])
-
-        async with self.drop_lock:  # when someone places a coin, lock random coins from dropping
-            async with self.bot.db.acquire() as conn:
-                try:
-                    async with conn.transaction():
-                        record = await conn.fetchrow("""
-                        UPDATE currency_users
-                        SET coins = coins - 1
-                        WHERE user_id = $1 AND coins > 0
-                        RETURNING user_id, coins
-                        """, ctx.author.id)
-
-                        if record is None:
-                            await ctx.send(f"You don't have any {plural_coin} to drop!")
-                            return
-
-                        pick_string = random.choice(pick_strings)
-
-                        coin_id = '%016x' % random.randrange(16 ** 16)
-                        self.bot.logger.info(f"{ctx.author.id} placed coin ({coin_id})")
-
-                        drop_message = await ctx.send(f"{ctx.author.mention} dropped a {singular_coin}! "
-                                                      f"Type `.{pick_string}` to {pick_string} it!")
-
-                        try:
-                            def pick_check(m):
-                                return (m.channel.id == ctx.channel.id and m.content.lower() == f".{pick_string}"
-                                        and m.author.id != ctx.author.id)
-
-                            drop_time = time.monotonic()
-                            pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
-                            pick_time = time.monotonic()
-                            self.bot.logger.info(f"User {pick_message.author.id} picked up a placed coin ({coin_id}) "
-                                                 f"in {pick_time-drop_time:.3f} seconds.")
-                        except asyncio.TimeoutError:
-                            await drop_message.delete()
-                            await ctx.send(f"{ctx.author.mention} Nobody picked up your {singular_coin}, so "
-                                           f"it's been returned to your pocket. Woosh!")
-                            raise Rollback() from None
-                        else:
-                            await conn.execute("""
-                            INSERT INTO currency_users (user_id, coins, last_picked)
-                            VALUES ($1, 1, $2)
-                            ON CONFLICT (user_id) DO UPDATE
-                            SET coins = currency_users.coins + 1,
-                            last_picked = $2
-                            """, pick_message.author.id, pick_message.created_at)
-                            await drop_message.delete()
-                            await ctx.send(f"{pick_message.author.mention} grabbed "
-                                           f"{ctx.author.mention}'s {singular_coin}!")
-                except Rollback:
-                    pass
 
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
@@ -250,7 +201,7 @@ class CoinDrop:
         async with self.bot.db.acquire() as conn:
             records = await conn.fetch("""
             SELECT * FROM currency_users
-            ORDER BY -coins
+            ORDER BY coins DESC
             LIMIT $1
             """, limit)
 
@@ -311,18 +262,6 @@ class CoinDrop:
 
         self.no_drops = not setting
         await ctx.send(f"Will{'' if setting else ' **NOT**'} do random drops.")
-
-    @commands.has_permissions(ban_members=True)
-    @commands.check(utils.check_granted_server)
-    @commands.command("place_setting")
-    async def place_setting(self, ctx: commands.Context, setting: bool=None):
-        """Set whether users can place coins or not."""
-        if setting is None:
-            await ctx.send(f"Currently{' NOT' if self.no_places else ''} allowing new coins to be placed.")
-            return
-
-        self.no_places = not setting
-        await ctx.send(f"Will{'' if setting else ' **NOT**'} allow users to place new coins.")
 
     @staticmethod
     async def attempt_add_reaction(message: discord.Message, reaction):

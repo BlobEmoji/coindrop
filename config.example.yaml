@@ -26,8 +26,13 @@ admin_users:
   - 122122926760656896
   - 69198249432449024
 
-pick_strings:
-  - pick
+emoji_sources:  # a list of guild IDs to pull static emotes from
+  - 272885620769161216
+  - 356869031870988309
+  - 356876866952364032
+  - 356876897403011072
+  - 396144014128054275
+  - 494946907181809667
 
-drop_strings:  # {singular} for singular, {plural} for plural, {cmd} for command name
-  - "A {singular} dropped! Type `.{cmd}` to {cmd} it!"
+drop_strings:
+  - "I found this blob, but I can't remember what it's called! What was it?"
