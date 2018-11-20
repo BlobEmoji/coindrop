@@ -86,7 +86,7 @@ class CoinDrop:
             # round up all emojis and pick one
             guild_ids = self.bot.config.get("emoji_sources", [272885620769161216])
             guilds = tuple(filter(None, map(self.bot.get_guild, guild_ids)))
-            emojis = tuple(filter(lambda x: not x.animated, itertools.chain(g.emojis for g in guilds)))
+            emojis = tuple(filter(lambda x: not x.animated, itertools.chain(*[g.emojis for g in guilds])))
 
             if not emojis:
                 self.bot.logger.error(f"I wanted to drop a blob, but I couldn't find any suitable emoji!")
