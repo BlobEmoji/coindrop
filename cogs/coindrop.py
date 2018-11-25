@@ -94,6 +94,10 @@ class CoinDrop:
 
             emoji_chosen = random.choice(emojis)
 
+            self.blob_options = [emoji_chosen.name, str(emoji_chosen)]
+            if emoji_chosen.name.startswith('blob'):  # allow omitting blob
+                self.blob_options.append(emoji_chosen.name[4:])
+
             # now let's go get it
             async with self.bot.session.get(emoji_chosen.url) as resp:
                 emoji_bytes = await resp.read()
@@ -104,7 +108,6 @@ class CoinDrop:
             drop_message = await channel.send(drop_string, file=file)
 
             self.additional_pickers = []
-            self.blob_options = [emoji_chosen.name, str(emoji_chosen)]
             self.last_drop = time.monotonic()
             self.wait_until = self.last_drop + cooldown
             self.bot.loop.create_task(self.count_additional(channel, max_additional_delay))
@@ -131,7 +134,9 @@ class CoinDrop:
         with Image.open(BytesIO(image_bytes)) as im:
             filter_chosen = random.choice((
                 ImageFilter.GaussianBlur(radius=3),
-                ImageFilter.UnsharpMask()
+                ImageFilter.UnsharpMask(),
+                ImageFilter.ModeFilter(size=5),
+                ImageFilter.MinFilter(size=3)
             ))
 
             with im.filter(filter_chosen) as im2:
