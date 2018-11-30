@@ -166,7 +166,7 @@ class CoinDrop:
         await asyncio.sleep(wait_time)
         picker_count = len(self.additional_pickers)
         if picker_count > 1:
-            await channel.send(f"({picker_count - 1} users were fast enough to get a bonus coin)")
+            await channel.send(f"({picker_count - 1} user(s) were fast enough to get a bonus coin)")
 
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
