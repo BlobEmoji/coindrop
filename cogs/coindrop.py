@@ -76,7 +76,7 @@ class CoinDrop:
             cooldown = self.bot.config.get("cooldown_time", 20)
 
             currency_name = self.bot.config.get("currency", {})
-            singular_coin = currency_name.get("singular", "coin")
+            plural_coin = currency_name.get("plural", "coins")
 
             drop_strings = self.bot.config.get("drop_strings",
                                                ["I found this blob, but I can't remember what it's called! What was it?"])
@@ -95,8 +95,11 @@ class CoinDrop:
             emoji_chosen = random.choice(emojis)
 
             self.blob_options = [emoji_chosen.name, str(emoji_chosen)]
+
             if emoji_chosen.name.startswith('blob'):  # allow omitting blob
                 self.blob_options.append(emoji_chosen.name[4:])
+            elif emoji_chosen.name.startswith('google'):  # allow omitting google
+                self.blob_options.append(emoji_chosen.name[6:])
 
             # now let's go get it
             async with self.bot.session.get(emoji_chosen.url) as resp:
@@ -126,7 +129,7 @@ class CoinDrop:
                 return
             else:
                 self.bot.loop.create_task(self.add_coin(pick_message.author.id, pick_message.created_at))
-                await channel.send(f"{pick_message.author.mention} That's the one! Have a {singular_coin}!")
+                await channel.send(f"{pick_message.author.mention} That's the one! Have 2 {plural_coin}!")
                 await asyncio.sleep(1)
                 await drop_message.delete()
 
@@ -163,7 +166,7 @@ class CoinDrop:
         await asyncio.sleep(wait_time)
         picker_count = len(self.additional_pickers)
         if picker_count > 1:
-            await channel.send(f"({picker_count} users were fast enough to get a bonus coin)")
+            await channel.send(f"({picker_count - 1} users were fast enough to get a bonus coin)")
 
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
