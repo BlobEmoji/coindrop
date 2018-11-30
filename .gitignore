@@ -106,6 +106,10 @@ ENV/
 # IntelliJ
 .idea
 
+# Visual Studio Code
+.code
+.vscode
+
 # Configuration
 config.json
 config.yaml
