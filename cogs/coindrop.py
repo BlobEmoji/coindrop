@@ -100,7 +100,7 @@ class CoinDrop:
             if emoji_chosen.name.startswith('blob'):  # allow omitting blob
                 self.blob_options.append(emoji_chosen.name[4:])
             elif emoji_chosen.name.endswith('blob'):
-                self.blob_options.append(emoji_chosen[:-4])
+                self.blob_options.append(emoji_chosen.name[:-4])
             elif emoji_chosen.name.startswith('google'):  # allow omitting google
                 self.blob_options.append(emoji_chosen.name[6:])
 
