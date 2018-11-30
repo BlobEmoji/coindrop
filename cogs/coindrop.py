@@ -76,6 +76,7 @@ class CoinDrop:
             cooldown = self.bot.config.get("cooldown_time", 20)
 
             currency_name = self.bot.config.get("currency", {})
+            singular_coin = currency_name.get("singular", "coins")
             plural_coin = currency_name.get("plural", "coins")
 
             drop_strings = self.bot.config.get("drop_strings",
@@ -129,7 +130,10 @@ class CoinDrop:
                 return
             else:
                 self.bot.loop.create_task(self.add_coin(pick_message.author.id, pick_message.created_at))
-                await channel.send(f"{pick_message.author.mention} That's the one! Have 2 {plural_coin}!")
+                if time.monotonic() < (self.last_drop + max_additional_delay):
+                    await channel.send(f"{pick_message.author.mention} That's the one! Have 2 {plural_coin}!")
+                else:
+                    await channel.send(f"{pick_message.author.mention} That's the one! Have a {singular_coin}!")
                 await asyncio.sleep(1)
                 await drop_message.delete()
 
