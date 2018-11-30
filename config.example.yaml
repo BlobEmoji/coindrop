@@ -10,6 +10,8 @@ recovery_time: 10  # seconds for probability to recover after cooldown expires
 
 drop_chance: 0.1  # chance for drop per message as float (0.1 is 10%, etc)
 
+additional_delay: 5  # time where extra coins can be gotten
+
 db_credentials:
   host: localhost
   port: 5432
