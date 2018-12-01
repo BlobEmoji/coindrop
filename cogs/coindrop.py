@@ -189,11 +189,11 @@ class CoinDrop:
         async with self.bot.db.acquire() as conn:
             record = await conn.fetchrow("SELECT coins FROM currency_users WHERE user_id = $1", ctx.author.id)
             if record is None:
-                await ctx.send(f"You haven't got any {plural_coin} yet!")
+                await ctx.send(f"{ctx.author.mention}: You haven't got any {plural_coin} yet!")
             else:
                 coins = record["coins"]
                 coin_text = f"{coins} {singular_coin if coins==1 else plural_coin}"
-                await ctx.send(f"{ctx.author.mention} You have {coin_text}.")
+                await ctx.send(f"{ctx.author.mention}: You have {coin_text}.")
 
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
