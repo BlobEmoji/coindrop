@@ -5,7 +5,7 @@ python:
 services:
   - postgresql
 addons:
-  postgresql: "11"
+  postgresql: "9.6"
 before_script:
   - psql -c 'create database travis_testdb;' -U postgres
   - psql travis_testdb < schema.sql
