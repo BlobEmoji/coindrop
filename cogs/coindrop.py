@@ -40,6 +40,11 @@ class CoinDrop:
                 self.bot.loop.create_task(self.add_coin(message.author.id, message.created_at))
                 self.bot.logger.info(f"User {message.author.id} additional-guessed blob ({self.last_coin_id}) in "
                                      f"{immediate_time-self.last_drop:.3f} seconds.")
+                try:
+                    await message.delete()
+                except (discord.Forbidden, discord.HTTPException):
+                    pass
+                
                 return
 
         if self.no_drops:
@@ -188,12 +193,17 @@ class CoinDrop:
 
         async with self.bot.db.acquire() as conn:
             record = await conn.fetchrow("SELECT coins FROM currency_users WHERE user_id = $1", ctx.author.id)
-            if record is None:
-                await ctx.send(f"You haven't got any {plural_coin} yet!")
-            else:
-                coins = record["coins"]
-                coin_text = f"{coins} {singular_coin if coins==1 else plural_coin}"
-                await ctx.send(f"{ctx.author.mention} You have {coin_text}.")
+
+            try:
+                if record is None:
+                    await ctx.author.send(f"You haven't got any {plural_coin} yet!")
+                else:
+                    coins = record["coins"]
+                    coin_text = f"{coins} {singular_coin if coins==1 else plural_coin}"
+                    await ctx.author.send(f"You have {coin_text}.")
+                await ctx.message.delete()
+            except (discord.Forbidden, discord.HTTPException):
+                pass
 
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
