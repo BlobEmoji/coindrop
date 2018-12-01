@@ -230,7 +230,6 @@ class CoinDrop:
 
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
-    @commands.guild_only()
     @commands.command("stats")
     async def stats_command(self, ctx: commands.Context, *, mode: str=''):
         """Coin leaderboard"""
@@ -243,7 +242,7 @@ class CoinDrop:
 
         limit = 8
 
-        if mode == 'long' and ctx.author.guild_permissions.ban_members:
+        if mode == 'long' and (not ctx.guild or ctx.author.guild_permissions.ban_members):
             limit = 25
 
         async with self.bot.db.acquire() as conn:
