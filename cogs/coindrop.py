@@ -154,7 +154,7 @@ class CoinDrop:
                 ImageFilter.MinFilter(size=3)
             ))
 
-            with im.filter(filter_chosen) as im2:
+            with im.convert('RGBA').filter(filter_chosen) as im2:
                 buffer = BytesIO()
                 im2.save(buffer, 'png')
         
