@@ -206,8 +206,31 @@ class CoinDrop:
             except (discord.Forbidden, discord.HTTPException):
                 pass
 
+    @commands.has_permissions(ban_members=True)
+    @commands.check(utils.check_granted_server)
+    @commands.command("peek")
+    async def peek_command(self, ctx: commands.Context, *, target: discord.Member):
+        """Check another user's coin balance"""
+        if not self.bot.db_available.is_set():
+            return
+
+        currency_name = self.bot.config.get("currency", {})
+        singular_coin = currency_name.get("singular", "coin")
+        plural_coin = currency_name.get("plural", "coins")
+
+        async with self.bot.db.acquire() as conn:
+            record = await conn.fetchrow("SELECT coins FROM currency_users WHERE user_id = $1", target.id)
+
+            if record is None:
+                await ctx.send(f"{target.mention} hasn't gotten any {plural_coin} yet!")
+            else:
+                coins = record["coins"]
+                coin_text = f"{coins} {singular_coin if coins==1 else plural_coin}"
+                await ctx.send(f"{target.mention} has {coin_text}.")
+
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
+    @commands.guild_only()
     @commands.command("stats")
     async def stats_command(self, ctx: commands.Context, *, mode: str=''):
         """Coin leaderboard"""
