@@ -37,7 +37,7 @@ class CoinDrop:
                 immediate_time < (self.last_drop + max_additional_delay)):
             if message.author.id not in self.additional_pickers:
                 self.additional_pickers.append(message.author.id)
-                self.bot.loop.create_task(self.add_coin(message.author.id, message.created_at))
+                self.bot.loop.create_task(self.add_coin(message.author, message.created_at))
                 self.bot.logger.info(f"User {message.author.id} additional-guessed blob ({self.last_coin_id}) in "
                                      f"{immediate_time-self.last_drop:.3f} seconds.")
                 try:
@@ -137,7 +137,7 @@ class CoinDrop:
                 await drop_message.delete()
                 return
             else:
-                self.bot.loop.create_task(self.add_coin(pick_message.author.id, pick_message.created_at))
+                self.bot.loop.create_task(self.add_coin(pick_message.author, pick_message.created_at))
                 if time.monotonic() < (self.last_drop + max_additional_delay):
                     await channel.send(f"{pick_message.author.mention} That's the one! Have 2 {plural_coin}!")
                 else:
@@ -161,18 +161,37 @@ class CoinDrop:
         buffer.seek(0)
         return discord.File(fp=buffer, filename="blob.png")
 
-    async def add_coin(self, user_id, when):
+    async def add_coin(self, member, when):
         await self.bot.db_available.wait()
 
         async with self.bot.db.acquire() as conn:
             async with conn.transaction():
-                await conn.execute("""
-                INSERT INTO currency_users (user_id, coins, last_picked)
-                VALUES ($1, 1, $2)
-                ON CONFLICT (user_id) DO UPDATE
-                SET coins = currency_users.coins + 1,
-                last_picked = $2
-                """, user_id, when)
+                coins = await conn.fetchval(
+                    """
+                    INSERT INTO currency_users (user_id, coins, last_picked)
+                    VALUES ($1, 1, $2)
+                    ON CONFLICT (user_id) DO UPDATE
+                    SET coins = currency_users.coins + 1, last_picked = $2
+                    RETURNING coins
+                    """,
+                    member.id,
+                    when)
+
+        rewards = self.bot.config.get('reward_roles', {})
+
+        if coins not in rewards:
+            return
+
+        role = member.guild.get_role(rewards[coins])
+
+        if role is None:
+            self.bot.logger.warning(f'Failed to find reward role for {coins} coins.')
+            return
+
+        try:
+            await member.add_roles(role, reason=f'Reached {coins} coins reward.')
+        except discord.HTTPException:
+            self.bot.logger.exception(f'Failed to add reward role for {coins} coins to {member!r}.')
 
     async def count_additional(self, channel, wait_time):
         await asyncio.sleep(wait_time)
