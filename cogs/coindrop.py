@@ -207,7 +207,7 @@ class CoinDrop:
             await channel.send(f"(The correct blob was {self.last_blob}, "
                                f"{picker_count - 1} user(s) were fast enough to get a bonus coin)")
         else:
-            await channel.send(f"(The correct blob was {self.last_blob}")
+            await channel.send(f"(The correct blob was {self.last_blob})")
 
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
