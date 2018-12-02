@@ -168,7 +168,7 @@ class CoinDrop:
 
         async with self.bot.db.acquire() as conn:
             async with conn.transaction():
-                return conn.fetchval(
+                return await conn.fetchval(
                     """
                     INSERT INTO currency_users (user_id, coins, last_picked)
                     VALUES ($1, 1, $2)
