@@ -25,6 +25,7 @@ class CoinDrop:
         self.wait_until = self.last_drop
         self.drop_lock = asyncio.Lock()
         self.no_drops = False
+        self.last_blob = None
         self.blob_options = []
         self.last_coin_id = None
         self.additional_pickers = []
@@ -100,6 +101,7 @@ class CoinDrop:
 
             emoji_chosen = random.choice(emojis)
 
+            self.last_blob = emoji_chosen
             self.blob_options = [emoji_chosen.name, str(emoji_chosen)]
 
             if len(emoji_chosen.name) > 4:  # don't cut off 'blob'
@@ -200,8 +202,12 @@ class CoinDrop:
     async def count_additional(self, channel, wait_time):
         await asyncio.sleep(wait_time)
         picker_count = len(self.additional_pickers)
+
         if picker_count > 1:
-            await channel.send(f"({picker_count - 1} user(s) were fast enough to get a bonus coin)")
+            await channel.send(f"(The correct blob was {self.last_blob}, "
+                               f"{picker_count - 1} user(s) were fast enough to get a bonus coin)")
+        else:
+            await channel.send(f"(The correct blob was {self.last_blob}")
 
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
