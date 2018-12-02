@@ -35,7 +35,7 @@ async def async_context_test(bot):
     # no virtual login since logic is too cramped right now
 
     coindrop = bot.get_cog("CoinDrop")
-    await coindrop.add_coin(234567890123456789, datetime.datetime.utcnow())
+    await coindrop._add_coin(234567890123456789, datetime.datetime.utcnow())
 
     await bot.close()
 
