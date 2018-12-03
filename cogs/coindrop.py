@@ -32,7 +32,7 @@ class CoinDrop:
         self.additional_pickers = []
 
     async def on_message(self, message):
-        max_additional_delay = self.bot.config.get("additional_delay", 5)
+        max_additional_delay = self.bot.config.get("additional_delay", 10)
 
         immediate_time = time.monotonic()
         if (message.content.lower().strip().replace(' ', '') in self.blob_options and
@@ -79,7 +79,7 @@ class CoinDrop:
 
     async def perform_natural_drop(self, channel, coin_id):
         async with self.drop_lock:
-            max_additional_delay = self.bot.config.get("additional_delay", 5)
+            max_additional_delay = self.bot.config.get("additional_delay", 10)
 
             cooldown = self.bot.config.get("cooldown_time", 20)
 
