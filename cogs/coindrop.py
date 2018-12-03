@@ -24,6 +24,7 @@ class CoinDrop:
         self.last_drop = time.monotonic()
         self.wait_until = self.last_drop
         self.drop_lock = asyncio.Lock()
+        self.acquire_lock = asyncio.Lock()
         self.no_drops = False
         self.last_blob = None
         self.blob_options = []
@@ -131,7 +132,8 @@ class CoinDrop:
                     return m.channel.id == channel.id and m.content.lower() in self.blob_options
 
                 drop_time = time.monotonic()
-                pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
+                async with self.acquire_lock:
+                    pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
                 pick_time = time.monotonic()
                 self.bot.logger.info(f"User {pick_message.author.id} correctly guessed a blob ({coin_id}) in "
                                      f"{pick_time-drop_time:.3f} seconds.")
@@ -201,13 +203,15 @@ class CoinDrop:
 
     async def count_additional(self, channel, wait_time):
         await asyncio.sleep(wait_time)
-        picker_count = len(self.additional_pickers)
 
-        if picker_count > 1:
-            await channel.send(f"(The correct blob was {self.last_blob}, "
-                               f"{picker_count - 1} user(s) were fast enough to get a bonus coin)")
-        else:
-            await channel.send(f"(The correct blob was {self.last_blob})")
+        async with self.acquire_lock:
+            picker_count = len(self.additional_pickers)
+
+            if picker_count > 1:
+                await channel.send(f"(The correct blob was {self.last_blob}, "
+                                f"{picker_count - 1} user(s) were fast enough to get a bonus coin)")
+            else:
+                await channel.send(f"(The correct blob was {self.last_blob})")
 
     @commands.cooldown(1, 4, commands.BucketType.user)
     @commands.cooldown(1, 1.5, commands.BucketType.channel)
