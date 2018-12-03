@@ -102,15 +102,15 @@ class CoinDrop:
             emoji_chosen = random.choice(emojis)
 
             self.last_blob = emoji_chosen
-            self.blob_options = [emoji_chosen.name, str(emoji_chosen)]
+            self.blob_options = [emoji_chosen.name.lower(), str(emoji_chosen).lower()]
 
             if len(emoji_chosen.name) > 4:  # don't cut off 'blob'
                 if emoji_chosen.name.startswith('blob'):  # allow omitting blob
-                    self.blob_options.append(emoji_chosen.name[4:])
+                    self.blob_options.append(emoji_chosen.name[4:].lower())
                 elif emoji_chosen.name.endswith('blob'):
-                    self.blob_options.append(emoji_chosen.name[:-4])
+                    self.blob_options.append(emoji_chosen.name[:-4].lower())
                 elif emoji_chosen.name.startswith('google'):  # allow omitting google
-                    self.blob_options.append(emoji_chosen.name[6:])
+                    self.blob_options.append(emoji_chosen.name[6:].lower())
 
             # now let's go get it
             async with self.bot.session.get(emoji_chosen.url) as resp:
