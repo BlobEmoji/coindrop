@@ -35,8 +35,9 @@ class CoinDrop:
         max_additional_delay = self.bot.config.get("additional_delay", 5)
 
         immediate_time = time.monotonic()
-        if (message.content.lower() in self.blob_options and
+        if (message.content.lower().strip().replace(' ', '') in self.blob_options and
                 immediate_time < (self.last_drop + max_additional_delay)):
+    
             if message.author.id not in self.additional_pickers:
                 self.additional_pickers.append(message.author.id)
                 self.bot.loop.create_task(self.add_coin(message.author, message.created_at))
@@ -103,15 +104,17 @@ class CoinDrop:
             emoji_chosen = random.choice(emojis)
 
             self.last_blob = emoji_chosen
-            self.blob_options = [emoji_chosen.name.lower(), str(emoji_chosen).lower()]
+            blob_options = [emoji_chosen.name, str(emoji_chosen)]
 
             if len(emoji_chosen.name) > 4:  # don't cut off 'blob'
                 if emoji_chosen.name.startswith('blob'):  # allow omitting blob
-                    self.blob_options.append(emoji_chosen.name[4:].lower())
+                    blob_options.append(emoji_chosen.name[4:])
                 elif emoji_chosen.name.endswith('blob'):
-                    self.blob_options.append(emoji_chosen.name[:-4].lower())
+                    blob_options.append(emoji_chosen.name[:-4])
                 elif emoji_chosen.name.startswith('google'):  # allow omitting google
-                    self.blob_options.append(emoji_chosen.name[6:].lower())
+                    blob_options.append(emoji_chosen.name[6:])
+
+            self.blob_options = [x.lower().strip().replace(' ', '') for x in blob_options]
 
             # now let's go get it
             async with self.bot.session.get(emoji_chosen.url) as resp:
@@ -132,8 +135,10 @@ class CoinDrop:
                     return m.channel.id == channel.id and m.content.lower() in self.blob_options
 
                 drop_time = time.monotonic()
+
                 async with self.acquire_lock:
                     pick_message = await self.bot.wait_for('message', check=pick_check, timeout=90)
+
                 pick_time = time.monotonic()
                 self.bot.logger.info(f"User {pick_message.author.id} correctly guessed a blob ({coin_id}) in "
                                      f"{pick_time-drop_time:.3f} seconds.")
