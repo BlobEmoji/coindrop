@@ -41,3 +41,8 @@ emoji_sources:  # a list of guild IDs to pull static emotes from
 
 drop_strings:
   - "I found this blob, but I can't remember what it's called! What was it?"
+  - "blobCAPTCHA v3: Please prove you're not a robot. What is the name of this blob?",
+  - "I dropped my glasses. What's the name of this blob?"
+  - "Blob located on main deck! Identification required *IMMEDIATELY*."
+  - "I found this blob on the street! Can anyone tell me what type it is?"
+  - "My blob shirt got the print washed out! Tell me which one this is, so I can buy another one!"

@@ -151,7 +151,7 @@ class CoinDrop:
                     await channel.send(f"{pick_message.author.mention} That's the one! Have 2 {plural_coin}!")
                 else:
                     await channel.send(f"{pick_message.author.mention} That's the one! Have a {singular_coin}!")
-                await asyncio.sleep(1)
+                await asyncio.sleep(max(self.last_drop + max_additional_delay - time.monotonic(), 0) + 1)
                 await drop_message.delete()
 
     def do_filters(self, image_bytes: bytes) -> discord.File:
