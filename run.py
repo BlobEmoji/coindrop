@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
 import asyncio
-import uvloop
 
 import logging
 import sys
 
-import yaml
+import toml
 
 from bot import DropBot
 
-asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+try:
+    import uvloop
+except ImportError:
+    pass
+else:
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
 
 logging.getLogger('discord').setLevel(logging.INFO)
 logging.getLogger('dropbot').setLevel(logging.DEBUG)
@@ -25,8 +30,8 @@ stream.setFormatter(formatter)
 logging.getLogger().addHandler(handler)
 logging.getLogger().addHandler(stream)
 
-with open("config.yaml", 'rb') as fp:
-    config = yaml.safe_load(fp)
+with open('config.toml', 'r', encoding='utf-8') as fp:
+    config = toml.load(fp)
 
 token = config.pop("token")
 

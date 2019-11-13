@@ -25,9 +25,9 @@ class DropBot(commands.Bot):
         self.loop.create_task(self.acquire_pool())
 
     async def acquire_pool(self):
-        credentials = self.config.pop("db_credentials")
+        credentials = self.config.pop("database")
 
-        if credentials is None:
+        if not credentials:
             self.logger.critical("Cannot connect to db, no credentials!")
             await self.logout()
 

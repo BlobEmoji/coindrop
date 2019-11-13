@@ -1,5 +1,9 @@
 version: '2'
 
+volumes:
+  coindrop-postgresql:
+    external: true
+
 services:
 
   bot:
@@ -10,7 +14,7 @@ services:
       - ./:/app
 
   db:
-    image: postgres:11
+    image: postgres:alpine
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      - coindrop-postgresql:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql

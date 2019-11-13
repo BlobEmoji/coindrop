@@ -6,13 +6,17 @@ import os
 import logging
 import sys
 
-import yaml
+import toml
 
 from bot import DropBot
 
-if os.name != "nt":
+try:
     import uvloop
+except ImportError:
+    pass
+else:
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
 
 logging.getLogger('discord').setLevel(logging.INFO)
 logging.getLogger('dropbot').setLevel(logging.DEBUG)
@@ -41,8 +45,8 @@ async def async_context_test(bot):
 
 
 def test_load_run():
-    with open("config.yaml", 'rb') as fp:
-        config = yaml.safe_load(fp)
+    with open('config.toml', 'r', encoding='utf-8') as fp:
+        config = toml.load(fp)
 
     config.pop("token")
 

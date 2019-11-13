@@ -1,4 +1,4 @@
-FROM python:latest
+FROM gorialis/discord.py:master
 
 WORKDIR /app
 ADD . /app

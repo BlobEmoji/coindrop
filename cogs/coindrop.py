@@ -18,8 +18,10 @@ class Rollback(Exception):
     pass
 
 
-class CoinDrop:
+class CoinDrop(commands.Cog):
     def __init__(self, bot):
+        super().__init__()
+
         self.bot = bot
         self.last_drop = time.monotonic()
         self.wait_until = self.last_drop
@@ -31,13 +33,14 @@ class CoinDrop:
         self.last_coin_id = None
         self.additional_pickers = []
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         max_additional_delay = self.bot.config.get("additional_delay", 10)
 
         immediate_time = time.monotonic()
         if (message.content.lower().strip().replace(' ', '') in self.blob_options and
                 immediate_time < (self.last_drop + max_additional_delay)):
-    
+
             if message.author.id not in self.additional_pickers:
                 self.additional_pickers.append(message.author.id)
                 self.bot.loop.create_task(self.add_coin(message.author, message.created_at))
@@ -117,7 +120,7 @@ class CoinDrop:
             self.blob_options = [x.lower().strip().replace(' ', '') for x in blob_options]
 
             # now let's go get it
-            async with self.bot.session.get(emoji_chosen.url) as resp:
+            async with self.bot.session.get(str(emoji_chosen.url)) as resp:
                 emoji_bytes = await resp.read()
 
             # perform a filter and get new file
@@ -188,7 +191,7 @@ class CoinDrop:
                 )
 
     async def add_coin(self, member, when):
-        coins = await self._add_coin(member.id, when)
+        coins = str(await self._add_coin(member.id, when))
 
         rewards = self.bot.config.get('reward_roles', {})
 
