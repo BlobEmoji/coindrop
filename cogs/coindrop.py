@@ -285,6 +285,9 @@ class CoinDrop(commands.Cog):
 
         if mode == 'long' and (not ctx.guild or ctx.author.guild_permissions.ban_members):
             limit = 25
+            
+        if mode == 'short':
+            limit = 3
 
         async with self.bot.db.acquire() as conn:
             records = await conn.fetch("""
